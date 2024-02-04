@@ -1,6 +1,4 @@
-using HololiveTalentsApi.Models;
-using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using Microsoft.AspNetCore.Cors;
+using HololiveTalentsApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HololiveTalentsAPI.Controllers
@@ -10,47 +8,18 @@ namespace HololiveTalentsAPI.Controllers
     public class LiveTalentsController : ControllerBase
     {
 
-        private readonly ILogger<LiveTalentsController> _logger;
+        private readonly ILiveTalentsService _liveTalentsService;
 
-        private readonly HttpClient _httpClient;
-
-        public LiveTalentsController(ILogger<LiveTalentsController> logger, HttpClient httpClient)
+        public LiveTalentsController(ILiveTalentsService liveTalentsService)
         {
-            _logger = logger;
-
-            _httpClient = httpClient;
+            _liveTalentsService = liveTalentsService;
         }
 
         [HttpGet(Name = "GetLiveTalents")]
 
         public async Task <IActionResult> Get()
         {
-            LiveTalentsModel? liveTalents = null;
-            string errorString;
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=UCSJ4gkVC6NrvII8umztf0Ow&key={APIKeyPlaceholder}&eventType=live&type=video");
-
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                liveTalents = await response.Content.ReadFromJsonAsync<LiveTalentsModel>();
-            }
-            else
-            {
-                errorString = $"There was an error finding LiveTalents: {response.ReasonPhrase}";
-            }
-
-            GetLiveTalentsModel liveTalentsResponse;
-
-            if (liveTalents?.items.Any() == false) 
-            {
-                liveTalentsResponse = new GetLiveTalentsModel { IsLive = false };
-            }
-            else 
-            {
-                liveTalentsResponse = new GetLiveTalentsModel { IsLive = true, LiveTalentsUrl = $"https://www.youtube.com/watch?v={liveTalents?.items.First().id.videoId}" };
-            }
+            var liveTalentsResponse = await _liveTalentsService.Get();
 
             return Ok(liveTalentsResponse);
         }
